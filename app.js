@@ -26,25 +26,33 @@ App = {
   initWeb3: async function() {
 
     // Modern dapp browsers...
-if (window.ethereum) {
-  App.web3Provider = window.ethereum;
-  try {
-    // Request account access
-    await window.ethereum.enable();
-  } catch (error) {
-    // User denied account access...
-    console.error("User denied account access")
+  if (window.ethereum) {
+    App.web3Provider = window.ethereum;
+    try {
+      // Request account access
+      await window.ethereum.enable();
+    } catch (error) {
+      // User denied account access...
+      console.error("User denied account access")
+    }
   }
-}
-// Legacy dapp browsers...
-else if (window.web3) {
-  App.web3Provider = window.web3.currentProvider;
-}
-// If no injected web3 instance is detected, fall back to Ganache
-else {
-  App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
-}
-web3 = new Web3(App.web3Provider);
+  // Legacy dapp browsers...
+  else if (window.web3) {
+    App.web3Provider = window.web3.currentProvider;
+  }
+  // If no injected web3 instance is detected, fall back to Ganache
+  else {
+    App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+  }
+  web3 = new Web3(App.web3Provider);
+
+  // load default account data
+  web3.eth.getCoinbase(function(err, account) {
+    if (err == null){
+      App.account = account;
+      //console.log("coinbase account is", account);
+    }
+  });
 
     return App.initContract();
   },
@@ -68,6 +76,7 @@ web3 = new Web3(App.web3Provider);
   bindEvents: function() {
     $(document).on('click', '.btn-adopt', App.handleAdopt);
   },
+
 
   markAdopted: function(adopters, account) {
     var adoptionInstance;
@@ -112,6 +121,30 @@ web3 = new Web3(App.web3Provider);
         console.log(err.message);
       });
     });
+  },
+
+  donateMeEther: function() {
+    App.contracts.Adoption.deployed().then(function(instance) {      
+      //send ether from the account to the contract
+      var amount = $('#donationAmount').val();
+      console.log(amount);
+      web3.eth.sendTransaction({
+        from: App.account,
+        to: App.contracts.Adoption.address,
+        value: amount
+      }, function(err, transactionHash) {
+        if(err) { console.log(err);}
+        else {
+          console.log(transactionHash + " success");
+        }
+      });
+      $(window).alert("Thanks for your donation");
+    });
+    
+    
+    
+
+
   }
 
 };
